@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021 Synaptics Incorporated
+
+#
+# kernel module: berlin-chipid.ko
+#
+
+obj-m += berlin-chipid.o
