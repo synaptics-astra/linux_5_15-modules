@@ -6,3 +6,4 @@
 #
 
 obj-m += tps6286x.o
+obj-m += tps6287x.o
