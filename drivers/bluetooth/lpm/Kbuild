@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021 Synaptics Incorporated
+
+#
+# kernel module: bluetooth-lpm.ko
+#
+
+EXTRA_CFLAGS += -I$(srctree)/drivers/bluetooth
+
+obj-m += bluetooth-lpm.o

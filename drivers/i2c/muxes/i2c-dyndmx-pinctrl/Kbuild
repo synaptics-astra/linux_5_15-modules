@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021 Synaptics Incorporated
+
+#
+# kernel module: i2c-dyndmx-pinctrl.ko
+#
+
+obj-m += i2c-dyndmx-pinctrl.o

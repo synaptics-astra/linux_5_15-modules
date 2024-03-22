@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021 Synaptics Incorporated
+
+#
+# kernel module: myna2-clks.ko
+#
+
+MODULE_NAME ?= myna2-clks
+
+EXTRA_CFLAGS += -I$(src)/..
+
+OBJS := ../clk.o \
+		../gate.o
+
+obj-m += $(MODULE_NAME).o
+
+$(MODULE_NAME)-objs  = $(OBJS)

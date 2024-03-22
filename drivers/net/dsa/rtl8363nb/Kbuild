@@ -1,0 +1,80 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021 Synaptics Incorporated
+
+#
+# kernel module: rtl8363nb.ko
+#
+
+MODULE_NAME ?= rtl8363nb
+
+EXTRA_CFLAGS += -Werror
+EXTRA_CFLAGS += -I$(src)/src \
+                -I$(src)/inc
+EXTRA_CFLAGS += -DMDC_MDIO_OPERATION -D_LITTLE_ENDIAN
+
+ifeq ($(DEBUG), 1)
+    EXTRA_CFLAGS += -DDEBUG_LEVEL=2
+endif
+
+OBJS := src/rtl8363nb.o \
+        src/acl.o \
+        src/cpu.o \
+        src/dot1x.o \
+        src/eee.o \
+        src/i2c.o \
+        src/igmp.o \
+        src/interrupt.o \
+        src/l2.o \
+        src/leaky.o \
+        src/led.o \
+        src/mirror.o \
+        src/oam.o \
+        src/port.o \
+        src/ptp.o \
+        src/qos.o \
+        src/rate.o \
+        src/rldp.o \
+        src/rtk_switch.o \
+        src/rtl8367c_asicdrv_acl.o \
+        src/rtl8367c_asicdrv.o \
+        src/rtl8367c_asicdrv_cputag.o \
+        src/rtl8367c_asicdrv_dot1x.o \
+        src/rtl8367c_asicdrv_eav.o \
+        src/rtl8367c_asicdrv_eee.o \
+        src/rtl8367c_asicdrv_fc.o \
+        src/rtl8367c_asicdrv_green.o \
+        src/rtl8367c_asicdrv_hsb.o \
+        src/rtl8367c_asicdrv_i2c.o \
+        src/rtl8367c_asicdrv_igmp.o \
+        src/rtl8367c_asicdrv_inbwctrl.o \
+        src/rtl8367c_asicdrv_interrupt.o \
+        src/rtl8367c_asicdrv_led.o \
+        src/rtl8367c_asicdrv_lut.o \
+        src/rtl8367c_asicdrv_meter.o \
+        src/rtl8367c_asicdrv_mib.o \
+        src/rtl8367c_asicdrv_mirror.o \
+        src/rtl8367c_asicdrv_misc.o \
+        src/rtl8367c_asicdrv_oam.o \
+        src/rtl8367c_asicdrv_phy.o \
+        src/rtl8367c_asicdrv_port.o \
+        src/rtl8367c_asicdrv_portIsolation.o \
+        src/rtl8367c_asicdrv_qos.o \
+        src/rtl8367c_asicdrv_rldp.o \
+        src/rtl8367c_asicdrv_rma.o \
+        src/rtl8367c_asicdrv_scheduling.o \
+        src/rtl8367c_asicdrv_storm.o \
+        src/rtl8367c_asicdrv_svlan.o \
+        src/rtl8367c_asicdrv_trunking.o \
+        src/rtl8367c_asicdrv_unknownMulticast.o \
+        src/rtl8367c_asicdrv_vlan.o \
+        src/smi.o \
+        src/stat.o \
+        src/storm.o \
+        src/svlan.o \
+        src/trap.o \
+        src/trunk.o \
+        src/vlan.o
+
+obj-m += $(MODULE_NAME).o
+
+$(MODULE_NAME)-objs  = $(OBJS)

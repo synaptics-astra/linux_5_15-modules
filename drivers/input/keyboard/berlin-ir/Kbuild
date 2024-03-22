@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021 Synaptics Incorporated
+
+#
+# kernel module: berlin-ir.ko
+#
+
+EXTRA_CFLAGS += -I$(src)/../../../soc/berlin/modules/sm
+
+obj-m += berlin-ir.o

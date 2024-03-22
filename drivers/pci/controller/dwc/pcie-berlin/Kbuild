@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021 Synaptics Incorporated
+
+#
+# kernel module: pcie-berlin.ko
+#
+
+EXTRA_CFLAGS += -I$(srctree)/drivers/pci \
+				-I$(srctree)/drivers/pci/controller/dwc
+
+obj-m += pcie-berlin.o

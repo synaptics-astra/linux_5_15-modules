@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021 Synaptics Incorporated
+
+#
+# kernel module: platypus-clks.ko
+#
+
+MODULE_NAME ?= platypus-clks
+
+EXTRA_CFLAGS += -I$(src)/..
+
+OBJS := ../clk.o \
+		../gate.o
+
+obj-m += $(MODULE_NAME).o
+
+$(MODULE_NAME)-objs  = $(OBJS)
