@@ -40,11 +40,11 @@ static int myna2_gateclk_setup(struct platform_device *pdev)
 }
 
 static const struct clk_desc myna2_descs[] = {
-	{ "cpufastrefclk",		0x0, CLK_IS_CRITICAL },
-	{ "memfastrefclk",		0x4 },
-	{ "cfgclk",			0x8, CLK_IS_CRITICAL },
-	{ "atbclk",			0xc, CLK_IS_CRITICAL },
-	{ "apbcoreclk",			0x10, CLK_IS_CRITICAL },
+	{ "cpufastrefclk",		0x0, CLK_IS_CRITICAL, CLK_RATE_NO_CHANGE},
+	{ "memfastrefclk",		0x4, CLK_IS_CRITICAL, CLK_RATE_NO_CHANGE },
+	{ "cfgclk",			0x8, CLK_IS_CRITICAL, CLK_RATE_NO_CHANGE },
+	{ "atbclk",			0xc, CLK_IS_CRITICAL, CLK_RATE_NO_CHANGE },
+	{ "apbcoreclk",			0x10, CLK_IS_CRITICAL, CLK_RATE_NO_CHANGE},
 	{ "usb2test480mg0clk",		0x14 },
 	{ "usb2test480mg1clk",		0x18 },
 	{ "usb2test480mg2clk",		0x1c },
