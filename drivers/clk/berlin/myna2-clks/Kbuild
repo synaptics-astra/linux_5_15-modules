@@ -9,9 +9,6 @@ MODULE_NAME ?= myna2-clks
 
 EXTRA_CFLAGS += -I$(src)/..
 
-OBJS := ../clk.o \
-		../gate.o
-
 obj-m += $(MODULE_NAME).o
 
 $(MODULE_NAME)-objs  = $(OBJS)

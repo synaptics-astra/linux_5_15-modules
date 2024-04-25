@@ -2,12 +2,13 @@
 # Copyright (C) 2021 Synaptics Incorporated
 
 #
-# kernel module: platypus-clks.ko
+# kernel module: syna-clk.ko
 #
 
-MODULE_NAME ?= platypus-clks
+MODULE_NAME ?= syna-clk
 
-EXTRA_CFLAGS += -I$(src)/..
+OBJS := clk.o \
+		gate.o
 
 obj-m += $(MODULE_NAME).o
 

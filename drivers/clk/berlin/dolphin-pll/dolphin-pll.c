@@ -18,8 +18,6 @@
 #include <linux/module.h>
 #include <linux/of_device.h>
 
-#include "clk.h"
-
 #define FRAC_BITS		24
 #define FRAC_MASK		((1<<FRAC_BITS) - 1)
 
