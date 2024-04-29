@@ -25,7 +25,8 @@
 #define RT5739_CTRL2		6
 #define   RT5739_BUCK_EN0	(1 << 0)
 #define   RT5739_BUCK_EN1	(1 << 1)
-#define RT5739_MAX		(RT5739_CTRL2 + 1)
+#define RT5739_CTRL4		8
+#define RT5739_MAX		(RT5739_CTRL4 + 1)
 
 #define RT5739_DISCHARGE_MASK	(1<<7)
 #define RT5739_DISCHARGE_ENABLE	(1<<7)
@@ -129,10 +130,35 @@ static bool rt5739_volatile_reg(struct device *dev, unsigned int reg)
 	return false;
 }
 
+static bool rt5739_writeable_reg(struct device *dev, unsigned int reg)
+{
+	switch (reg) {
+	case RT5739_SEL0 ... RT5739_CTRL:
+	case RT5739_CTRL2:
+	case RT5739_CTRL4:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool rt5739_readable_reg(struct device *dev, unsigned int reg)
+{
+	switch (reg) {
+	case RT5739_SEL0 ... RT5739_CTRL2:
+	case RT5739_CTRL4:
+		return true;
+	default:
+		return false;
+	}
+}
+
 static const struct regmap_config rt5739_regmap_config = {
 	.reg_bits = 8,
 	.val_bits = 8,
 	.volatile_reg = rt5739_volatile_reg,
+	.writeable_reg = rt5739_writeable_reg,
+	.readable_reg = rt5739_readable_reg,
 	.num_reg_defaults_raw = RT5739_MAX,
 	.cache_type = REGCACHE_FLAT,
 };
