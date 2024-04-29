@@ -519,8 +519,28 @@ fail_clk:
 	return ret;
 }
 
+static int berlin_pcie_remove(struct platform_device *pdev)
+{
+	struct berlin_pcie *priv = platform_get_drvdata(pdev);
+
+	writel(0xffffffff, priv->ctrl + priv->data->intr_mask);
+	if (priv->data->intr_mask1)
+		writel(0xffffffff, priv->ctrl + priv->data->intr_mask1);
+
+	dw_pcie_host_deinit(&priv->pci.pp);
+	phy_power_off(priv->phy);
+	phy_exit(priv->phy);
+	reset_control_assert(priv->rc_rst);
+	clk_disable_unprepare(priv->clk);
+	gpiod_set_value_cansleep(priv->enable_gpio, 0);
+	berlin_pcie_set_gpios_value(priv->power_gpios, 0);
+
+	return 0;
+}
+
 static struct platform_driver berlin_pcie_driver = {
 	.probe = berlin_pcie_probe,
+	.remove = berlin_pcie_remove,
 	.driver = {
 		.name = "berlin-pcie",
 		.suppress_bind_attrs = true,
@@ -530,7 +550,7 @@ static struct platform_driver berlin_pcie_driver = {
 #endif
 	},
 };
-builtin_platform_driver(berlin_pcie_driver);
+module_platform_driver(berlin_pcie_driver);
 
 MODULE_AUTHOR("Jisheng Zhang <jszhang@kernel.org>");
 MODULE_DESCRIPTION("Synaptics PCIe host controller driver");
