@@ -8,10 +8,10 @@
  */
 
 #include <linux/init.h>
+#include <linux/module.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/regmap.h>
-#include <linux/module.h>
 
 #include "berlin.h"
 
@@ -536,6 +536,7 @@ static const struct of_device_id myna2_pinctrl_match[] = {
 	},
 	{}
 };
+MODULE_DEVICE_TABLE(of, myna2_pinctrl_match);
 
 static int myna2_pinctrl_probe(struct platform_device *pdev)
 {
@@ -586,11 +587,7 @@ static struct platform_driver myna2_pinctrl_driver = {
 		.of_match_table = myna2_pinctrl_match,
 	},
 };
-
-static int __init myna2_pinctrl_init(void)
-{
-	return platform_driver_register(&myna2_pinctrl_driver);
-}
-arch_initcall(myna2_pinctrl_init);
+module_platform_driver(myna2_pinctrl_driver);
 
 MODULE_LICENSE("GPL v2");
+MODULE_DESCRIPTION("pinctrl library for Synaptics myna2 SoC");
