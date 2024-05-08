@@ -9,14 +9,11 @@
  */
 
 #include <linux/clk-provider.h>
+#include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/of_device.h>
-#include <linux/module.h>
 
 #include "clk.h"
-
-static struct clk_onecell_data gateclk_data;
-static struct clk_onecell_data clk_data;
 
 static const struct gateclk_desc dolphin_gates[] = {
 	{ "usb0coreclk",	"perifsysclk",	0 },
@@ -30,16 +27,7 @@ static const struct gateclk_desc dolphin_gates[] = {
 
 static int dolphin_gateclk_setup(struct platform_device *pdev)
 {
-	int n = ARRAY_SIZE(dolphin_gates);
-	int ret;
-
-	ret = berlin_gateclk_setup(pdev, dolphin_gates, &gateclk_data, n);
-	if (ret)
-		return ret;
-
-	platform_set_drvdata(pdev, &gateclk_data);
-
-	return 0;
+	return berlin_gateclk_setup(pdev, dolphin_gates, ARRAY_SIZE(dolphin_gates));
 }
 
 static const struct clk_desc dolphin_descs[] = {
@@ -91,16 +79,7 @@ static const struct clk_desc dolphin_descs[] = {
 
 static int dolphin_clk_setup(struct platform_device *pdev)
 {
-	int n = ARRAY_SIZE(dolphin_descs);
-	int ret;
-
-	ret = berlin_clk_setup(pdev, dolphin_descs, &clk_data, n);
-	if (ret)
-		return ret;
-
-	platform_set_drvdata(pdev, &clk_data);
-
-	return 0;
+	return berlin_clk_setup(pdev, dolphin_descs, ARRAY_SIZE(dolphin_descs));
 }
 
 static const struct of_device_id dolphin_clks_match_table[] = {

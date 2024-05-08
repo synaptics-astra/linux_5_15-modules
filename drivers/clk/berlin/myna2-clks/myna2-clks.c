@@ -6,14 +6,11 @@
  */
 
 #include <linux/clk-provider.h>
+#include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/of_device.h>
-#include <linux/module.h>
 
 #include "clk.h"
-
-static struct clk_onecell_data gateclk_data;
-static struct clk_onecell_data clk_data;
 
 static const struct gateclk_desc myna2_gates[] = {
 	{ "usb0coreclk",	"perifsysclk",	0 },
@@ -27,16 +24,7 @@ static const struct gateclk_desc myna2_gates[] = {
 
 static int myna2_gateclk_setup(struct platform_device *pdev)
 {
-	int n = ARRAY_SIZE(myna2_gates);
-	int ret;
-
-	ret = berlin_gateclk_setup(pdev, myna2_gates, &gateclk_data, n);
-	if (ret)
-		return ret;
-
-	platform_set_drvdata(pdev, &gateclk_data);
-
-	return 0;
+	return berlin_gateclk_setup(pdev, myna2_gates, ARRAY_SIZE(myna2_gates));
 }
 
 static const struct clk_desc myna2_descs[] = {
@@ -77,16 +65,7 @@ static const struct clk_desc myna2_descs[] = {
 
 static int myna2_clk_setup(struct platform_device *pdev)
 {
-	int n = ARRAY_SIZE(myna2_descs);
-	int ret;
-
-	ret = berlin_clk_setup(pdev, myna2_descs, &clk_data, n);
-	if (ret)
-		return ret;
-
-	platform_set_drvdata(pdev, &clk_data);
-
-	return 0;
+	return berlin_clk_setup(pdev, myna2_descs, ARRAY_SIZE(myna2_descs));
 }
 
 static const struct of_device_id myna2_clks_match_table[] = {
@@ -121,12 +100,7 @@ static struct platform_driver myna2_clks_driver = {
 		.of_match_table = myna2_clks_match_table,
 	},
 };
-
-static int __init myna2_clks_init(void)
-{
-	return platform_driver_register(&myna2_clks_driver);
-}
-core_initcall(myna2_clks_init);
+module_platform_driver(myna2_clks_driver);
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("Synaptics myna2 clks Driver");

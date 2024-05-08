@@ -37,11 +37,9 @@ struct gateclk_desc {
 
 int berlin_clk_setup(struct platform_device *pdev,
 			     const struct clk_desc *desc,
-			     struct clk_onecell_data *clk_data,
 			     int n);
 
 int berlin_gateclk_setup(struct platform_device *pdev,
 				 const struct gateclk_desc *descs,
-				 struct clk_onecell_data *clk_data,
 				 int n);
 #endif

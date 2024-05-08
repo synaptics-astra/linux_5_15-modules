@@ -8,29 +8,71 @@
  */
 
 #include <linux/clk-provider.h>
+#include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/slab.h>
 #include <linux/spinlock_types.h>
 #include <linux/platform_device.h>
-#include <linux/module.h>
 
 #include "clk.h"
 
+struct berlin_gate_clk_priv {
+	struct clk_hw_onecell_data data;
+};
+
 static DEFINE_SPINLOCK(berlin_gateclk_lock);
+
+static void devm_clk_hw_release_gate(struct device *dev, void *res)
+{
+	clk_hw_unregister_gate(*(struct clk_hw **)res);
+}
+
+static struct clk_hw *__devm_clk_hw_register_gate(struct device *dev,
+                struct device_node *np, const char *name,
+                const char *parent_name, const struct clk_hw *parent_hw,
+                const struct clk_parent_data *parent_data,
+                unsigned long flags,
+                void __iomem *reg, u8 bit_idx,
+                u8 clk_gate_flags, spinlock_t *lock)
+{
+	struct clk_hw **ptr, *hw;
+
+	ptr = devres_alloc(devm_clk_hw_release_gate, sizeof(*ptr), GFP_KERNEL);
+	if (!ptr)
+		return ERR_PTR(-ENOMEM);
+
+	hw = __clk_hw_register_gate(dev, np, name, parent_name, parent_hw,
+				    parent_data, flags, reg, bit_idx,
+				    clk_gate_flags, lock);
+
+	if (!IS_ERR(hw)) {
+		*ptr = hw;
+		devres_add(dev, ptr);
+	} else {
+		devres_free(ptr);
+	}
+
+	return hw;
+}
+
+#define devm_clk_hw_register_gate(dev, name, parent_name, flags, reg, bit_idx,	\
+				  clk_gate_flags, lock)				\
+	__devm_clk_hw_register_gate((dev), NULL, (name), (parent_name), NULL,	\
+				NULL, (flags), (reg), (bit_idx),		\
+				(clk_gate_flags), (lock))
 
 int berlin_gateclk_setup(struct platform_device *pdev,
 			const struct gateclk_desc *descs,
-			struct clk_onecell_data *clk_data,
 			int n)
 {
-	int i, ret;
+	int i;
 	void __iomem *base;
-	struct clk **clks;
 	struct resource *res;
+	struct berlin_gate_clk_priv *priv;
 
-	clks = devm_kcalloc(&pdev->dev, n, sizeof(struct clk *), GFP_KERNEL);
-	if (!clks)
+	priv = devm_kzalloc(&pdev->dev, struct_size(priv, data.hws, n), GFP_KERNEL);
+	if (!priv)
 		return -ENOMEM;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -38,36 +80,26 @@ int berlin_gateclk_setup(struct platform_device *pdev,
 	if (WARN_ON(!base))
 		return -ENOMEM;
 
-	for (i = 0; i < n; i++) {
-		struct clk *clk;
+	priv->data.num = n;
 
-		clk = clk_register_gate(NULL, descs[i].name,
+	for (i = 0; i < n; i++) {
+		struct clk_hw *clk;
+
+		clk = devm_clk_hw_register_gate(&pdev->dev, descs[i].name,
 				descs[i].parent_name,
 				descs[i].flags, base,
 				descs[i].bit_idx, 0,
 				&berlin_gateclk_lock);
-		if (WARN_ON(IS_ERR(clk))) {
-			ret = PTR_ERR(clk);
-			goto err_clk_register;
-		}
-		clks[i] = clk;
+		if (IS_ERR(clk))
+			return PTR_ERR(clk);
+
+		priv->data.hws[i] = clk;
 	}
 
-	clk_data->clks = clks;
-	clk_data->clk_num = i;
-
-	ret = of_clk_add_provider(pdev->dev.of_node,
-				of_clk_src_onecell_get,
-				clk_data);
-	if (WARN_ON(ret))
-		goto err_clk_register;
-	return 0;
-
-err_clk_register:
-	for (i = 0; i < n; i++)
-		clk_unregister(clks[i]);
-	return ret;
+	return devm_of_clk_add_hw_provider(&pdev->dev, of_clk_hw_onecell_get, &priv->data);
 }
 EXPORT_SYMBOL_GPL(berlin_gateclk_setup);
 
 MODULE_LICENSE("GPL v2");
+MODULE_AUTHOR("Jisheng Zhang <jszhang@kernel.org>");
+MODULE_DESCRIPTION("base gate clk driver for Synaptics SoCs");

@@ -8,11 +8,11 @@
  */
 
 #include <linux/clk-provider.h>
+#include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/slab.h>
 #include <linux/platform_device.h>
-#include <linux/module.h>
 #include "clk.h"
 
 #define CLKEN		(1 << 0)
@@ -31,6 +31,11 @@
 struct berlin_clk {
 	struct clk_hw hw;
 	void __iomem *base;
+};
+
+struct berlin_clk_priv {
+	unsigned int num;
+	struct berlin_clk bclk[];
 };
 
 #define to_berlin_clk(hw)	container_of(hw, struct berlin_clk, hw)
@@ -227,18 +232,13 @@ static const struct clk_ops berlin_fixed_clk_ops = {
 	.is_enabled	= berlin_clk_is_enabled,
 };
 
-static struct clk *
-berlin_clk_register(const char *name, int num_parents,
+static int
+berlin_clk_register(struct device *dev, struct berlin_clk *bclk,
+		    const char *name, int num_parents,
 		    const char **parent_names, unsigned long flags,
 		    unsigned long priv_flags, void __iomem *base)
 {
-	struct clk *clk;
-	struct berlin_clk *bclk;
 	struct clk_init_data init;
-
-	bclk = kzalloc(sizeof(*bclk), GFP_KERNEL);
-	if (!bclk)
-		return ERR_PTR(-ENOMEM);
 
 	init.name = name;
 	if (priv_flags & CLK_RATE_NO_CHANGE)
@@ -252,22 +252,31 @@ berlin_clk_register(const char *name, int num_parents,
 	bclk->base = base;
 	bclk->hw.init = &init;
 
-	clk = clk_register(NULL, &bclk->hw);
-	if (IS_ERR(clk))
-		kfree(bclk);
+	return devm_clk_hw_register(dev, &bclk->hw);
+}
 
-	return clk;
+static struct clk_hw *
+berlin_of_clk_get(struct of_phandle_args *clkspec, void *data)
+{
+	struct berlin_clk_priv *priv = data;
+	unsigned int idx = clkspec->args[0];
+
+	if (idx >= priv->num) {
+		pr_err("%s: invalid index %u\n", __func__, idx);
+		return ERR_PTR(-EINVAL);
+	}
+
+	return &priv->bclk[idx].hw;
 }
 
 int berlin_clk_setup(struct platform_device *pdev,
-			const struct clk_desc *descs,
-			struct clk_onecell_data *clk_data,
-			int n)
+		     const struct clk_desc *descs,
+		     int n)
 {
 	int i, ret, num_parents;
 	void __iomem *base;
 	struct device_node *np = pdev->dev.of_node;
-	struct clk **clks;
+	struct berlin_clk_priv *priv;
 	struct resource *res;
 	const char *parent_names[CLK_SOURCE_MAX];
 
@@ -277,8 +286,8 @@ int berlin_clk_setup(struct platform_device *pdev,
 
 	of_clk_parent_fill(np, parent_names, num_parents);
 
-	clks = devm_kcalloc(&pdev->dev, n, sizeof(struct clk *), GFP_KERNEL);
-	if (!clks)
+	priv = devm_kzalloc(&pdev->dev, struct_size(priv, bclk, n), GFP_KERNEL);
+	if (!priv)
 		return -ENOMEM;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -287,33 +296,20 @@ int berlin_clk_setup(struct platform_device *pdev,
 		return -ENOMEM;
 
 	for (i = 0; i < n; i++) {
-		struct clk *clk;
-
-		clk = berlin_clk_register(descs[i].name,
+		ret = berlin_clk_register(&pdev->dev, &priv->bclk[i], descs[i].name,
 				num_parents, parent_names,
 				descs[i].flags,
 				descs[i].priv_flags,
 				base + descs[i].offset);
-		if (WARN_ON(IS_ERR(clks[i]))) {
-			ret = PTR_ERR(clks[i]);
-			goto err_clk_register;
-		}
-		clks[i] = clk;
+		if (ret)
+			return ret;
 	}
+	priv->num = n;
 
-	clk_data->clks = clks;
-	clk_data->clk_num = i;
-
-	ret = of_clk_add_provider(np, of_clk_src_onecell_get, clk_data);
-	if (WARN_ON(ret))
-		goto err_clk_register;
-	return 0;
-
-err_clk_register:
-	for (i = 0; i < n; i++)
-		clk_unregister(clks[i]);
-	return ret;
+	return devm_of_clk_add_hw_provider(&pdev->dev, berlin_of_clk_get, priv);
 }
 EXPORT_SYMBOL_GPL(berlin_clk_setup);
 
 MODULE_LICENSE("GPL v2");
+MODULE_AUTHOR("Jisheng Zhang <jszhang@kernel.org>");
+MODULE_DESCRIPTION("base clk driver for Synaptics SoCs");
