@@ -8,6 +8,7 @@
  */
 
 #include <linux/init.h>
+#include <linux/module.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/regmap.h>
@@ -472,6 +473,7 @@ static const struct of_device_id dolphin_pinctrl_match[] = {
 	},
 	{}
 };
+MODULE_DEVICE_TABLE(of, dolphin_pinctrl_match);
 
 static int dolphin_pinctrl_probe(struct platform_device *pdev)
 {
@@ -527,11 +529,7 @@ static struct platform_driver dolphin_pinctrl_driver = {
 		.of_match_table = dolphin_pinctrl_match,
 	},
 };
-
-static int __init dolphin_pinctrl_init(void)
-{
-	return platform_driver_register(&dolphin_pinctrl_driver);
-}
-arch_initcall(dolphin_pinctrl_init);
+module_platform_driver(dolphin_pinctrl_driver);
 
 MODULE_LICENSE("GPL v2");
+MODULE_DESCRIPTION("pinctrl library for Synaptics dolphin SoC");
