@@ -13,17 +13,18 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_fdt.h>
+#include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/sys_soc.h>
 #include <linux/module.h>
 
-u32 chip_revision __read_mostly;
-
-static const struct of_device_id chipid_of_match[] __initconst = {
+static const struct of_device_id berlin_chipid_of_match[] = {
 	{ .compatible = "marvell,berlin-chipid", },
 	{},
 };
-static const char * __init syna_id_to_family(u32 id)
+MODULE_DEVICE_TABLE(of, berlin_chipid_of_match);
+
+static const char *syna_id_to_family(u32 id)
 {
 	const char *soc_family;
 
@@ -44,7 +45,7 @@ static const char * __init syna_id_to_family(u32 id)
 	return soc_family;
 }
 
-static void __init rev_fixup(u32 id, u32 *rev)
+static void rev_fixup(u32 id, u32 *rev)
 {
 	if (id == 0x680) {
 		if (*rev == 0xa0)
@@ -56,35 +57,28 @@ static void __init rev_fixup(u32 id, u32 *rev)
 	}
 }
 
-static int __init berlin_chipid_init(void)
+static int berlin_chipid_probe(struct platform_device *pdev)
 {
 	u32 val, rev;
-	unsigned long dt_root;
+	struct device_node *dt_root;
 	struct soc_device_attribute *soc_dev_attr;
 	struct soc_device *soc_dev;
-	struct device_node *np;
-	int ret = 0;
-	void __iomem *id_base = NULL;
+	struct device_node *np = pdev->dev.of_node;
+	int ret;
+	void __iomem *id_base;
 
-	np = of_find_matching_node(NULL, chipid_of_match);
-	if (!np)
-		return -ENODEV;
+	soc_dev_attr = devm_kzalloc(&pdev->dev, sizeof(*soc_dev_attr), GFP_KERNEL);
+	if (!soc_dev_attr)
+		return -ENOMEM;
 
 	id_base = of_iomap(np, 0);
-	if (!id_base) {
-		ret = -ENOMEM;
-		goto out_put_node;
-	}
+	if (!id_base)
+		return -ENOMEM;
 
-	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
-	if (!soc_dev_attr) {
-		ret = -ENOMEM;
-		goto out_unmap;
-	}
-
-	dt_root = of_get_flat_dt_root();
-	soc_dev_attr->machine = of_get_flat_dt_prop(dt_root, "model", NULL);
-	if (!soc_dev_attr->machine)
+	dt_root = of_find_node_by_path("/");
+	ret = of_property_read_string(dt_root, "model", &soc_dev_attr->machine);
+	of_node_put(dt_root);
+	if (ret < 0)
 		soc_dev_attr->machine = "<unknown>";
 
 	val = readl_relaxed(id_base);
@@ -96,20 +90,36 @@ static int __init berlin_chipid_init(void)
 	if (ret)
 		rev = readl_relaxed(id_base + 4);
 	rev_fixup(val, &rev);
-	chip_revision = rev;
-	soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%X", rev);
+	soc_dev_attr->revision = devm_kasprintf(&pdev->dev, GFP_KERNEL, "%X", rev);
+
+	iounmap(id_base);
 
 	soc_dev = soc_device_register(soc_dev_attr);
-	if (IS_ERR(soc_dev)) {
-		kfree(soc_dev_attr);
-		ret = PTR_ERR(soc_dev);
-	}
+	if (IS_ERR(soc_dev))
+		return PTR_ERR(soc_dev);
 
-out_unmap:
-	iounmap(id_base);
-out_put_node:
-	of_node_put(np);
-	return ret;
+	platform_set_drvdata(pdev, soc_dev);
+
+	return 0;
 }
-arch_initcall(berlin_chipid_init);
+
+static void berlin_chipid_remove(struct platform_device *pdev)
+{
+	struct soc_device *soc_dev = platform_get_drvdata(pdev);
+
+	soc_device_unregister(soc_dev);
+}
+
+static struct platform_driver berlin_chipid_driver = {
+	.probe		= berlin_chipid_probe,
+	.remove_new	= berlin_chipid_remove,
+	.driver		= {
+		.name	= "berlin-chipid",
+		.of_match_table = berlin_chipid_of_match,
+	},
+};
+module_platform_driver(berlin_chipid_driver);
+
 MODULE_LICENSE("GPL v2");
+MODULE_AUTHOR("Jisheng Zhang <jszhang@kernel.org>");
+MODULE_DESCRIPTION("Synaptics berlin chipid driver");
