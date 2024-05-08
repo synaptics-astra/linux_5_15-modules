@@ -309,8 +309,8 @@ static int berlin_pinctrl_build_state(struct platform_device *pdev)
 	}
 
 	/* we will reallocate later */
-	pctrl->functions = kcalloc(max_functions,
-				   sizeof(*pctrl->functions), GFP_KERNEL);
+	pctrl->functions = devm_kcalloc(&pdev->dev, max_functions,
+					sizeof(*pctrl->functions), GFP_KERNEL);
 	if (!pctrl->functions)
 		return -ENOMEM;
 
@@ -325,9 +325,9 @@ static int berlin_pinctrl_build_state(struct platform_device *pdev)
 		}
 	}
 
-	pctrl->functions = krealloc(pctrl->functions,
-				    pctrl->nfunctions * sizeof(*pctrl->functions),
-				    GFP_KERNEL);
+	pctrl->functions = devm_krealloc(&pdev->dev, pctrl->functions,
+					 pctrl->nfunctions * sizeof(*pctrl->functions),
+					 GFP_KERNEL);
 
 	/* map functions to theirs groups */
 	for (i = 0; i < pctrl->desc->ngroups; i++) {
@@ -348,10 +348,8 @@ static int berlin_pinctrl_build_state(struct platform_device *pdev)
 				function++;
 			}
 
-			if (!found) {
-				kfree(pctrl->functions);
+			if (!found)
 				return -EINVAL;
-			}
 
 			if (!function->groups) {
 				function->groups =
@@ -360,10 +358,8 @@ static int berlin_pinctrl_build_state(struct platform_device *pdev)
 						     sizeof(char *),
 						     GFP_KERNEL);
 
-				if (!function->groups) {
-					kfree(pctrl->functions);
+				if (!function->groups)
 					return -ENOMEM;
-				}
 			}
 
 			groups = function->groups;
