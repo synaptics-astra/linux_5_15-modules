@@ -431,6 +431,7 @@ int berlin_pinctrl_probe_regmap(struct platform_device *pdev,
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(berlin_pinctrl_probe_regmap);
 
 int berlin_pinctrl_probe(struct platform_device *pdev,
 			 const struct berlin_pinctrl_desc *desc)
@@ -445,6 +446,7 @@ int berlin_pinctrl_probe(struct platform_device *pdev,
 
 	return berlin_pinctrl_probe_regmap(pdev, desc, regmap, NULL);
 }
+EXPORT_SYMBOL_GPL(berlin_pinctrl_probe);
 
 int berlin_pinctrl_suspend(struct device *dev)
 {
@@ -465,6 +467,7 @@ int berlin_pinctrl_suspend(struct device *dev)
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(berlin_pinctrl_suspend);
 
 int berlin_pinctrl_resume(struct device *dev)
 {
@@ -485,6 +488,7 @@ int berlin_pinctrl_resume(struct device *dev)
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(berlin_pinctrl_resume);
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("pinctrl library for Synaptics SoCs");
