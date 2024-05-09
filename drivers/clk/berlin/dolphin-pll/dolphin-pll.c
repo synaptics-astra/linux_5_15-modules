@@ -129,10 +129,9 @@ struct dolphin_pll {
 	unsigned long rates[2];
 	u32 regs_bk[CTRLBK_MAX];
 	struct clk *bypass_clk;
-	struct clk *clks[2];
 	struct clk_hw hw;
 	struct clk_hw hw1;
-	struct clk_onecell_data	onecell_data;
+	struct clk_hw_onecell_data clk_data;
 };
 
 struct pll_preset_param {
@@ -719,7 +718,7 @@ static int dolphin_pll_setup(struct platform_device *pdev)
 	char name[16];
 	int ret;
 
-	pll = devm_kzalloc(dev, sizeof(*pll), GFP_KERNEL);
+	pll = devm_kzalloc(dev, struct_size(pll, clk_data.hws, 2), GFP_KERNEL);
 	if (!pll)
 		return -ENOMEM;
 
@@ -762,9 +761,9 @@ static int dolphin_pll_setup(struct platform_device *pdev)
 
 	pll->hw.init = &init;
 
-	pll->clks[0] = clk_register(NULL, &pll->hw);
-	if (WARN_ON(IS_ERR(pll->clks[0])))
-		return PTR_ERR(pll->clks[0]);
+	ret = devm_clk_hw_register(dev, &pll->hw);
+	if (ret)
+		return ret;
 
 	snprintf(name, sizeof(name), "%s_clko1", dev->of_node->name);
 	init.ops = &dolphin_pll_clko1_ops;
@@ -774,33 +773,26 @@ static int dolphin_pll_setup(struct platform_device *pdev)
 
 	pll->hw1.init = &init;
 
-	pll->clks[1] = clk_register(NULL, &pll->hw1);
-	if (WARN_ON(IS_ERR(pll->clks[1]))) {
-		ret = PTR_ERR(pll->clks[1]);
-		goto err_clk1_register;
-	}
+	ret = devm_clk_hw_register(dev, &pll->hw1);
+	if (ret)
+		return ret;
 
-	pll->onecell_data.clks = pll->clks;
-	pll->onecell_data.clk_num = 2;
+	pll->clk_data.hws[0] = &pll->hw;
+	pll->clk_data.hws[1] = &pll->hw1;
+	pll->clk_data.num = 2;
 
-	pll->rates[0] = clk_get_rate(pll->clks[0]);
-	pll->rates[1] = clk_get_rate(pll->clks[1]);
+	pll->rates[0] = clk_hw_get_rate(&pll->hw);
+	pll->rates[1] = clk_hw_get_rate(&pll->hw1);
 	pll->rates[0] = (pll->rates[0] + FREQ_FACTOR / 2) / FREQ_FACTOR;
 	pll->rates[1] = (pll->rates[1] + FREQ_FACTOR / 2) / FREQ_FACTOR;
 
-	ret = of_clk_add_provider(dev->of_node, of_clk_src_onecell_get,
-				  &pll->onecell_data);
-	if (WARN_ON(ret))
-		goto err_clk_add;
+	ret = devm_of_clk_add_hw_provider(dev, of_clk_hw_onecell_get,
+					  &pll->clk_data);
+	if (ret)
+		return ret;
 
 	platform_set_drvdata(pdev, pll);
 	return 0;
-
-err_clk_add:
-	clk_unregister(pll->clks[1]);
-err_clk1_register:
-	clk_unregister(pll->clks[0]);
-	return ret;
 }
 
 #ifdef CONFIG_PM_SLEEP
@@ -931,12 +923,7 @@ static struct platform_driver dolphin_pll_driver = {
 		.pm	= DEV_PM_OPS,
 	},
 };
-
-static int __init syna_dolphin_pll_init(void)
-{
-	return platform_driver_register(&dolphin_pll_driver);
-}
-core_initcall(syna_dolphin_pll_init);
+module_platform_driver(dolphin_pll_driver);
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("Synaptics dolphin pll Driver");
