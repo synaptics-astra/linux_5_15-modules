@@ -98,19 +98,14 @@ static int platypus_clks_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static struct platform_driver syna_clks_driver = {
+static struct platform_driver platypus_clks_driver = {
 	.probe		= platypus_clks_probe,
 	.driver		= {
 		.name	= "syna-platypus-clks",
 		.of_match_table = platypus_clks_match_table,
 	},
 };
-
-static int __init platypus_clks_init(void)
-{
-	return platform_driver_register(&syna_clks_driver);
-}
-core_initcall(platypus_clks_init);
+module_platform_driver(platypus_clks_driver);
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("Synaptics platypus clks Driver");
