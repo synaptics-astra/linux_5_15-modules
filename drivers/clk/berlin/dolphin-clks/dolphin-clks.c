@@ -114,12 +114,7 @@ static struct platform_driver dolphin_clks_driver = {
 		.of_match_table = dolphin_clks_match_table,
 	},
 };
-
-static int __init dolphin_clks_init(void)
-{
-	return platform_driver_register(&dolphin_clks_driver);
-}
-core_initcall(dolphin_clks_init);
+module_platform_driver(dolphin_clks_driver);
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("Synaptics dolphin clks Driver");
