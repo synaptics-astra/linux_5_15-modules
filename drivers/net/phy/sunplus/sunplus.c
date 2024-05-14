@@ -155,20 +155,7 @@ static int sunplus_ack_interrupt(struct phy_device *phydev)
 
 	phy_write(phydev, SUNPLUS_INT_STS, val);
 
-	return 0;
-}
-
-static irqreturn_t sunplus_handle_interrupt(struct phy_device *phydev)
-{
-	int irq_status;
-
-	irq_status = phy_read(phydev, SUNPLUS_INT_STS);
-	if (irq_status < 0) {
-		phy_error(phydev);
-		return IRQ_NONE;
-	}
-
-	if (irq_status & LNK_STS_CHG) {
+	if (val & LNK_STS_CHG) {
 		int oldpage, sts = phy_read(phydev, SUNPLUS_STS);
 
 		oldpage = phy_select_page(phydev, 0x6);
@@ -185,10 +172,26 @@ static irqreturn_t sunplus_handle_interrupt(struct phy_device *phydev)
 			__phy_write(phydev, 0x14, 0x7088);
 		}
 error:
-		if (phy_restore_page(phydev, oldpage, 0) < 0)
-			return IRQ_NONE;
-	} else
+		return phy_restore_page(phydev, oldpage, 0);
+	}
+
+	return 0;
+}
+
+static irqreturn_t sunplus_handle_interrupt(struct phy_device *phydev)
+{
+	int irq_status;
+
+	irq_status = phy_read(phydev, SUNPLUS_INT_STS);
+	if (irq_status < 0) {
+		phy_error(phydev);
 		return IRQ_NONE;
+	}
+
+	if (!irq_status)
+		return IRQ_NONE;
+
+	sunplus_ack_interrupt(phydev);
 
 	phy_trigger_machine(phydev);
 
@@ -273,7 +276,6 @@ static int sunplus_set_wol(struct phy_device *phydev,
 
 	return 0;
 }
-
 
 static int sunplus_probe(struct phy_device *phydev)
 {
